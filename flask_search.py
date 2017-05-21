@@ -6,8 +6,8 @@ Powerful search functionality for Flask apps via ElasticSearch
 :copyright: (c) 2015 by Asad Dhamani
 :license: MIT (see LICENSE)
 """
-from __future__ import absolute_import
-from __future__ import with_statement
+
+
 
 import elasticsearch
 
@@ -17,9 +17,9 @@ from flask import _app_ctx_stack as stack
 from flask import current_app
 
 try:
-    unicode
+    str
 except NameError:
-    unicode = str
+    str = str
 
 
 class FlaskSearch(object):
@@ -121,7 +121,7 @@ def _after_flush(app, changes):
             bytype.setdefault(change[0].__class__.__name__, []).append(
                 (update, change[0]))
 
-    for model, values in bytype.items():
+    for model, values in list(bytype.items()):
         primary_field = 'id'
         searchable = [x.split("^")[0] for x in values[0][1].__indexed_fields__]
         for update, v in values:
@@ -129,14 +129,14 @@ def _after_flush(app, changes):
                 attrs = {}
                 for key in searchable:
                     try:
-                        attrs[key] = unicode(getattr(v, key))
+                        attrs[key] = str(getattr(v, key))
                     except AttributeError:
                         raise AttributeError('{0} does not have {1} field {2}'
                                              .format(model, searchable, key))
 
-                attrs[primary_field] = unicode(getattr(v, primary_field))
+                attrs[primary_field] = str(getattr(v, primary_field))
                 body = {}
-                for key, value in attrs.items():
+                for key, value in list(attrs.items()):
                     if key in searchable:
                         body[key] = value
                 ctx.elasticsearch_cluster.index(index=index_name,
@@ -147,7 +147,7 @@ def _after_flush(app, changes):
                 try:
                     ctx.elasticsearch_cluster.delete(index=index_name,
                                                      doc_type=model,
-                                                     id=unicode(getattr(v,
+                                                     id=str(getattr(v,
                                                                         primary_field)))
                 except elasticsearch.exceptions.NotFoundError:
                     pass
